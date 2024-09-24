@@ -81,8 +81,7 @@ class ChunkedUploadBaseView(GenericAPIView):
             return Response(error.data, status=error.status_code)
 
 
-class ChunkedUploadView(ListModelMixin, RetrieveModelMixin,
-                        ChunkedUploadBaseView):
+class ChunkedUploadBaseHandlerView(ChunkedUploadBaseView):
     """
     Uploads large files in multiple chunks. Also, has the ability to resume
     if the upload is interrupted. PUT without upload ID to create an upload
@@ -267,9 +266,14 @@ class ChunkedUploadView(ListModelMixin, RetrieveModelMixin,
 
         return self.on_completion(chunked_upload, request)
 
+
+class ChunkedUploadCollectionView(ListModelMixin, ChunkedUploadBaseHandlerView):
+    @method_decorator(cache_page(0))
+    def _get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class ChunkedUploadResourceView(RetrieveModelMixin, ChunkedUploadBaseHandlerView):
     @method_decorator(cache_page(0))
     def _get(self, request, pk=None, *args, **kwargs):
-        if pk:
-            return self.retrieve(request, pk=pk, *args, **kwargs)
-        else:
-            return self.list(request, *args, **kwargs)
+        return self.retrieve(request, pk=pk, *args, **kwargs)
